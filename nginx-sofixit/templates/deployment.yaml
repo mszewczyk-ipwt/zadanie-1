@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zadanie-sofixit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: zadanie-sofixit
+  template:
+    metadata:
+      labels:
+        name: zadanie-sofixit
+    spec:
+      volumes:
+        - name: config
+          configMap:
+            name: nginx-config
+        - name: persistent-storage
+          hostPath:
+            path: /var/www
+            type: DirectoryOrCreate
+        {{- if and .Values.tls .Values.tls.key .Values.tls.cert  }}
+        - name: ssl
+          secret:
+            secretName: nginx-ssl
+            items:
+              - key: key
+                path: key.pem
+              - key: cert
+                path: cert.pem
+        {{- end }}
+      containers:
+        - name: nginx-sofixit
+          image: nginx
+          resources:
+            limits: 
+              cpu: 100m
+              memory: 128Mi
+            requests: 
+              cpu: 100m
+              memory: 128Mi
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: persistent-storage
+              mountPath: /var/www
+            {{- if .Values.auth }}
+            - name: config
+              mountPath: /etc/nginx/htpasswd
+              subPath: htpasswd
+            {{- end }}
+            {{- if and .Values.tls .Values.tls.key .Values.tls.cert  }}
+            - name: ssl
+              mountPath: /etc/ssl
+            {{- end }}

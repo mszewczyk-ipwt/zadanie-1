@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-sofixit
+spec:
+  type: ClusterIP
+  selector:
+    name: zadanie-sofixit
+  ports:
+    - targetPort: 80
+      port: 80
+      name: http
+    {{- if and .Values.tls .Values.tls.key .Values.tls.cert }}
+    - targetPort: 443
+      port: 443
+      name: https
+    {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-sofixit-external
+spec:
+  type: NodePort
+  selector:
+    name: zadanie-sofixit
+  ports:
+    - targetPort: 80
+      port: 80
+      name: http
+      nodePort: 31080
+    {{- if and .Values.tls .Values.tls.key .Values.tls.cert }}
+    - targetPort: 443
+      port: 443
+      name: https
+      nodePort: {{ include "nginx-sofixit.redirect_port" . }}
+    {{- end }}
